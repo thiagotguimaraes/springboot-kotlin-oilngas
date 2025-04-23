@@ -3,11 +3,25 @@ POST http://localhost:8080/api/wells
 Content-Type: application/json
 
 {
-  "name": "Well Theta",
-  "latitude": 25.5,
-  "longitude": 52.3,
-  "collection": "timeseries_well_tetha"
+  "name": "Well Xeta",
+  "latitude": 26.5,
+  "longitude": 52.3
 }
 
 ###
+POST http://localhost:8080/api/wells/delete?id=74b0cf21-c7e6-4969-9015-11be26113293
+
+###
+DELETE http://localhost:8080/api/wells/400ad796-2892-4936-ac1d-f1b3341a5985
+
+###
 GET http://localhost:8080/api/wells
+
+###
+POST http://localhost:8080/api/wells/3d99d47e-e4c5-4a86-9e94-3ef6034be2cb/timeseries
+Content-Type: application/json
+
+{"timestamp":1713891600000,"pressure":100,"oilRate":55,"temperature":85}
+
+###
+GET http://localhost:8080/api/wells/3d99d47e-e4c5-4a86-9e94-3ef6034be2cb/timeseries?from=1713880000000&to=1713900000000

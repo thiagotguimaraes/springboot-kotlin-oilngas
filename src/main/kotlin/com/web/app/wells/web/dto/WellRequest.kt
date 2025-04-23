@@ -4,5 +4,4 @@ data class WellRequest(
     val name: String,
     val latitude: Double,
     val longitude: Double,
-    val collection: String
 )
