@@ -1,0 +1,13 @@
+###
+POST http://localhost:8080/api/wells
+Content-Type: application/json
+
+{
+  "name": "Well Theta",
+  "latitude": 25.5,
+  "longitude": 52.3,
+  "collection": "timeseries_well_tetha"
+}
+
+###
+GET http://localhost:8080/api/wells

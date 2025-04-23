@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: app
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/app
+  #     SPRING_DATASOURCE_USERNAME: app
+  #     SPRING_DATASOURCE_PASSWORD: app
+  #   volumes:
+  #     - .:/app/src/main
+  #     - ~/.m2:/root/.m2
+  #   depends_on:
+  #     - postgres
+  postgres:
+    image: timescale/timescaledb:latest-pg14
+    container_name: timescaledb
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
