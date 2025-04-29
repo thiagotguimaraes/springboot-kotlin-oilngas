@@ -73,9 +73,7 @@ class WellService(
             name = well.name,
             latitude = well.latitude,
             longitude = well.longitude,
-            collection = well.collection,
-            startMs = well.startMs,
-            endMs = well.endMs
+            collection = well.collection
         )
     }
 }

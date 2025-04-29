@@ -7,7 +7,5 @@ data class WellResponse(
     val name: String,
     val latitude: Double,
     val longitude: Double,
-    val collection: String,
-    val startMs: Long?,
-    val endMs: Long?
+    val collection: String
 )

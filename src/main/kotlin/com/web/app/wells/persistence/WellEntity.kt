@@ -21,8 +21,4 @@ data class WellEntity(
 
     @Column(nullable = false)
     val collection: String,
-
-    val startMs: Long? = null,
-
-    val endMs: Long? = null
 )

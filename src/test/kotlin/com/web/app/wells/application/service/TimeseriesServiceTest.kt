@@ -45,7 +45,7 @@ class TimeseriesServiceTest {
         val wellId = UUID.randomUUID()
         val request = TimeseriesInsertRequest(1234567890L, 20.0, 30.0, 10.0)
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
 
         timeseriesService.insertData(wellId, request)
@@ -76,7 +76,7 @@ class TimeseriesServiceTest {
             TimeseriesInsertRequest(1234567891L, 102.0, 26.0, 21.0)
         )
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
 
         timeseriesService.insertDataBatch(wellId, points)
@@ -170,7 +170,7 @@ class TimeseriesServiceTest {
             TimeseriesPoint(1234567891L, 102.0, 26.0, 21.0)
         )
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
         `when`(
             jdbcTemplate.query(
@@ -218,7 +218,7 @@ class TimeseriesServiceTest {
         val startTime = 1234567890L
         val endTime = 1234567990L
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
         `when`(
             jdbcTemplate.query(
@@ -241,7 +241,7 @@ class TimeseriesServiceTest {
         val endTime = 1234567990L
 
         val maliciousWellEntity = WellEntity(
-            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;", 1L, 1L
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;"
         )
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
 
@@ -258,7 +258,7 @@ class TimeseriesServiceTest {
         val request = TimeseriesInsertRequest(1234567890L, 20.0, 30.0, 10.0)
 
         val maliciousWellEntity = WellEntity(
-            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;", 1L, 1L
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;"
         )
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
 
@@ -279,7 +279,7 @@ class TimeseriesServiceTest {
         )
 
         val maliciousWellEntity = WellEntity(
-            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;", 1L, 1L
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;"
         )
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
 

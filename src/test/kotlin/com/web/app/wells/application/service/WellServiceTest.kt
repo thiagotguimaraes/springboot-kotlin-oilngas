@@ -40,8 +40,8 @@ class WellServiceTest {
     @Test
     fun `getAll should return a list of WellResponse when data exists`() {
         val wellEntities = listOf(
-            WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L),
-            WellEntity(UUID.randomUUID(), "Well B", 2.0, 2.0, "well_b_timeseries", 2L, 2L)
+            WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries"),
+            WellEntity(UUID.randomUUID(), "Well B", 2.0, 2.0, "well_b_timeseries")
         )
         `when`(wellRepository.findAll()).thenReturn(wellEntities)
 
@@ -65,7 +65,7 @@ class WellServiceTest {
     @Test
     fun `getWellById should return WellResponse when well exists`() {
         val wellId = UUID.randomUUID()
-        val wellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val wellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, "well_a_timeseries")
         `when`(wellRepository.findById(wellId)).thenReturn(Optional.of(wellEntity))
 
         val result = wellService.getWellById(wellId)
@@ -90,7 +90,7 @@ class WellServiceTest {
     @Test
     fun `create should save a new WellEntity and return WellResponse`() {
         val wellRequest = WellRequest("Well A", 1.0, 1.0)
-        val wellEntity = WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val wellEntity = WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries")
         `when`(wellRepository.save(any(WellEntity::class.java))).thenReturn(wellEntity)
 
         val result = wellService.create(wellRequest)
@@ -103,7 +103,7 @@ class WellServiceTest {
     @Test
     fun `create should execute correct SQL commands`() {
         val wellRequest = WellRequest("Well A", 1.0, 1.0)
-        val wellEntity = WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val wellEntity = WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries")
         `when`(wellRepository.save(any(WellEntity::class.java))).thenReturn(wellEntity)
 
         wellService.create(wellRequest)
@@ -142,7 +142,7 @@ class WellServiceTest {
     // Test cases for WellEntity.toDto()
     @Test
     fun `WellEntity toDto should map WellEntity to WellResponse`() {
-        val wellEntity = WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val wellEntity = WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries")
 
         val result = WellService.toDto(wellEntity)
 
