@@ -17,6 +17,10 @@ class TimeseriesControler(
         @PathVariable id: UUID, @RequestBody request: TimeseriesInsertRequest
     ) = timeseriesService.insertData(id, request)
 
+    @PostMapping("/{id}/timeseries/batch")
+    fun insertDataBatch(
+        @PathVariable id: UUID, @RequestBody requests: List<TimeseriesInsertRequest>
+    ) = timeseriesService.insertDataBatch(id, requests)
 
     @GetMapping("/{id}/timeseries")
     fun getTimeseries(
