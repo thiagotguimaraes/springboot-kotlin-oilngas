@@ -4,7 +4,6 @@ import com.web.app.wells.domain.model.TimeseriesPoint
 import com.web.app.wells.persistence.WellEntity
 import com.web.app.wells.persistence.WellRepository
 import com.web.app.wells.web.dto.TimeseriesInsertRequest
-import org.apache.coyote.BadRequestException
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -152,7 +151,7 @@ class TimeseriesServiceTest {
         val wellId = UUID.randomUUID()
         val points = emptyList<TimeseriesInsertRequest>()
 
-        val exception = assertThrows(BadRequestException::class.java) {
+        val exception = assertThrows(IllegalArgumentException::class.java) {
             timeseriesService.insertDataBatch(wellId, points)
         }
 

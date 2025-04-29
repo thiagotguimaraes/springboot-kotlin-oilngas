@@ -3,7 +3,6 @@ package com.web.app.wells.application.service
 import com.web.app.wells.domain.model.TimeseriesPoint
 import com.web.app.wells.persistence.WellRepository
 import com.web.app.wells.web.dto.TimeseriesInsertRequest
-import org.apache.coyote.BadRequestException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import java.util.*
@@ -28,7 +27,7 @@ class TimeseriesService(
     }
 
     fun insertDataBatch(wellId: UUID, reqs: List<TimeseriesInsertRequest>) {
-        if (reqs.isEmpty()) throw BadRequestException("Request list cannot be empty")
+        if (reqs.isEmpty()) throw IllegalArgumentException("Request list cannot be empty")
 
         val well = wellRepository.findById(wellId).orElseThrow { NoSuchElementException("Well not found") }
 
