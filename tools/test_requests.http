@@ -27,7 +27,7 @@ Content-Type: application/json
 POST http://localhost:8080/api/wells/56322a37-33ce-4f9a-8674-41f123c5d3b6/timeseries/batch
 Content-Type: application/json
 
-[{"timestamp":1713891600000,"pressure":100,"oilRate":55,"temperature":85}, {"timestamp":1713891700000,"pressure":120,"oilRate":45,"temperature":65}]
+[{"timestamp":1713892000000,"pressure":150,"oilRate":55,"temperature":85}, {"timestamp":1713892100000,"pressure":160,"oilRate":45,"temperature":65}]
 
 ###
-GET http://localhost:8080/api/wells/3d99d47e-e4c5-4a86-9e94-3ef6034be2cb/timeseries?from=1713880000000&to=1713900000000
+GET http://localhost:8080/api/wells/56322a37-33ce-4f9a-8674-41f123c5d3b6/timeseries?from=1713880000000&to=1713900000000
