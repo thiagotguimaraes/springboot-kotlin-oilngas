@@ -14,16 +14,18 @@ class WellService(
     private val jdbcTemplate: JdbcTemplate
 ) {
 
-    fun getAll(): List<WellResponse> = wellRepository.findAll().map { it.toDto() }
+    fun getAll(): List<WellResponse> = wellRepository.findAll().map { toDto(it) }
 
     fun getWellById(wellId: UUID): WellResponse? {
-        return wellRepository.findById(wellId).orElse(null).toDto()
+        val wellEntity = wellRepository.findById(wellId).orElseThrow {
+            NoSuchElementException("Well not found")
+        }
+        return toDto(wellEntity)
     }
 
     fun create(request: WellRequest): WellResponse {
         val wellId = UUID.randomUUID()
-        val wellIdCleaned = wellId.toString().replace("-", "")
-        val tableName = "timeseries_$wellIdCleaned"
+        val tableName = makeTableName(wellId)
 
         val entity = WellEntity(
             id = wellId,
@@ -35,37 +37,47 @@ class WellService(
 
         val saved = wellRepository.save(entity)
 
-        createTimeseriesTable(tableName)
+        createTimeseriesTable(saved.collection)
 
-        return saved.toDto()
+        return toDto(saved)
     }
 
     fun delete(wellId: UUID) {
         wellRepository.deleteById(wellId)
     }
 
-    private fun createTimeseriesTable(table: String) {
+    internal fun createTimeseriesTable(table: String) {
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS $table (LIKE timeseries_template INCLUDING ALL);")
         jdbcTemplate.execute("SELECT create_hypertable('$table', 'timestamp', if_not_exists => TRUE);")
-        jdbcTemplate.execute(
-            """
-            CREATE TRIGGER update_boundaries_trigger
-            BEFORE INSERT OR UPDATE ON $table
-            FOR EACH ROW
-            EXECUTE FUNCTION update_well_boundaries();
-        """.trimIndent()
-        )
     }
 
-    private fun WellEntity.toDto(): WellResponse = WellResponse(
-        id = id,
-        name = name,
-        latitude = latitude,
-        longitude = longitude,
-        collection = collection,
-        startMs = startMs,
-        endMs = endMs
-    )
+    companion object {
+        internal fun makeTableName(wellId: UUID): String {
+            val wellIdCleaned = wellId.toString().replace("-", "")
+            return "timeseries_$wellIdCleaned"
+        }
+
+        internal fun validateTableName(tableName: String) {
+            var error = false
+            if (!tableName.startsWith("timeseries_")) error = true
+
+            val uuidRegex = Regex("^[a-fA-F0-9]{32}$") // Matches a UUID without dashes
+            val uuidPart = tableName.removePrefix("timeseries_")
+            if (!uuidRegex.matches(uuidPart)) error = true
+
+            if (error) throw IllegalArgumentException("Invalid table name.")
+        }
+
+        internal fun toDto(well: WellEntity): WellResponse = WellResponse(
+            id = well.id,
+            name = well.name,
+            latitude = well.latitude,
+            longitude = well.longitude,
+            collection = well.collection,
+            startMs = well.startMs,
+            endMs = well.endMs
+        )
+    }
 }
 
 

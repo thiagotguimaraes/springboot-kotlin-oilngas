@@ -3,9 +3,9 @@ POST http://localhost:8080/api/wells
 Content-Type: application/json
 
 {
-  "name": "Well Xeta",
-  "latitude": 26.5,
-  "longitude": 52.3
+  "name": "Well Zeta",
+  "latitude": 22.5,
+  "longitude": 50.3
 }
 
 ###

@@ -10,15 +10,15 @@ import java.util.*
 
 @Service
 class TimeseriesService(
-    private val wellRepository: WellRepository, private val jdbcTemplate: JdbcTemplate
+    private val wellRepository: WellRepository,
+    private val jdbcTemplate: JdbcTemplate
 ) {
 
     fun insertData(wellId: UUID, req: TimeseriesInsertRequest) {
         val well = wellRepository.findById(wellId).orElseThrow { NoSuchElementException("Well not found") }
 
-        // collection is already validated since it came from the DB.
-        // No SQL injection risk unless user input is used
         val table = well.collection
+        WellService.validateTableName(table)
 
         val sql = """
             INSERT INTO $table (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)
@@ -32,13 +32,11 @@ class TimeseriesService(
 
         val well = wellRepository.findById(wellId).orElseThrow { NoSuchElementException("Well not found") }
 
-        // collection is already validated since it came from the DB.
-        // No SQL injection risk unless user input is used
         val table = well.collection
+        WellService.validateTableName(table)
 
         val sql = """
-            INSERT INTO $table (timestamp, pressure, oil_rate, temperature)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO $table (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)
         """.trimIndent()
 
         val batchArgs = reqs.map { req ->
@@ -52,9 +50,12 @@ class TimeseriesService(
     fun getTimeseries(wellId: UUID, from: Long, to: Long): List<TimeseriesPoint> {
         val well = wellRepository.findById(wellId).orElseThrow { NoSuchElementException("Well not found") }
 
+        val table = well.collection
+        WellService.validateTableName(table)
+
         val sql = """
             SELECT timestamp, pressure, oil_rate, temperature
-            FROM ${well.collection}
+            FROM $table
             WHERE timestamp BETWEEN ? AND ?
             ORDER BY timestamp
         """.trimIndent()

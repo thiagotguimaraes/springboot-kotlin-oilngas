@@ -45,13 +45,13 @@ class TimeseriesServiceTest {
         val wellId = UUID.randomUUID()
         val request = TimeseriesInsertRequest(1234567890L, 20.0, 30.0, 10.0)
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
 
         timeseriesService.insertData(wellId, request)
 
         verify(jdbcTemplate).update(
-            eq("INSERT INTO well_a_timeseries (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)"),
+            eq("INSERT INTO ${WellService.makeTableName(wellId)} (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)"),
             eq(1234567890L), eq(20.0), eq(30.0), eq(10.0)
         )
     }
@@ -76,7 +76,7 @@ class TimeseriesServiceTest {
             TimeseriesInsertRequest(1234567891L, 102.0, 26.0, 21.0)
         )
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
 
         timeseriesService.insertDataBatch(wellId, points)
@@ -91,8 +91,7 @@ class TimeseriesServiceTest {
 
         assertEquals(
             """
-                INSERT INTO well_a_timeseries (timestamp, pressure, oil_rate, temperature)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO ${WellService.makeTableName(wellId)} (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)
                 """.trimIndent(),
             argumentCaptorSqlQuery.firstValue
         )
@@ -123,6 +122,32 @@ class TimeseriesServiceTest {
     }
 
     @Test
+    fun `insertDataBatch should not call jdbcTemplate if well is not found`() {
+        val wellId = UUID.randomUUID()
+        val points = listOf(
+            TimeseriesInsertRequest(1234567890L, 101.3, 25.5, 20.0)
+        )
+
+        assertThrows(NoSuchElementException::class.java) {
+            timeseriesService.insertDataBatch(wellId, points)
+        }
+
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `insertData should not call jdbcTemplate if well is not found`() {
+        val wellId = UUID.randomUUID()
+        val request = TimeseriesInsertRequest(1234567890L, 20.0, 30.0, 10.0)
+
+        assertThrows(NoSuchElementException::class.java) {
+            timeseriesService.insertData(wellId, request)
+        }
+
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
     fun `insertDataBatch should not call jdbcTemplate if batch is empty`() {
         val wellId = UUID.randomUUID()
         val points = emptyList<TimeseriesInsertRequest>()
@@ -145,7 +170,7 @@ class TimeseriesServiceTest {
             TimeseriesPoint(1234567891L, 102.0, 26.0, 21.0)
         )
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
         `when`(
             jdbcTemplate.query(
@@ -158,7 +183,6 @@ class TimeseriesServiceTest {
 
         val result = timeseriesService.getTimeseries(wellId, startTime, endTime)
 
-        val expectedPoints = expectedData.map { TimeseriesPoint(it.timestamp, it.pressure, it.oilRate, it.temperature) }
         assertEquals(expectedData, result)
     }
 
@@ -176,12 +200,25 @@ class TimeseriesServiceTest {
     }
 
     @Test
+    fun `getTimeseries should not call jdbcTemplate if well is not found`() {
+        val wellId = UUID.randomUUID()
+        val startTime = 1234567890L
+        val endTime = 1234567990L
+
+        assertThrows(NoSuchElementException::class.java) {
+            timeseriesService.getTimeseries(wellId, startTime, endTime)
+        }
+
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
     fun `getTimeseries should return empty list if no data in range`() {
         val wellId = UUID.randomUUID()
         val startTime = 1234567890L
         val endTime = 1234567990L
 
-        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, "well_a_timeseries", 1L, 1L)
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId), 1L, 1L)
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
         `when`(
             jdbcTemplate.query(
@@ -195,5 +232,62 @@ class TimeseriesServiceTest {
         val result = timeseriesService.getTimeseries(wellId, startTime, endTime)
 
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getTimeseries should prevent SQL injection in table name`() {
+        val wellId = UUID.randomUUID()
+        val startTime = 1234567890L
+        val endTime = 1234567990L
+
+        val maliciousWellEntity = WellEntity(
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;", 1L, 1L
+        )
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
+
+        assertThrows(IllegalArgumentException::class.java) {
+            timeseriesService.getTimeseries(wellId, startTime, endTime)
+        }
+
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `insertData should prevent SQL injection in table name`() {
+        val wellId = UUID.randomUUID()
+        val request = TimeseriesInsertRequest(1234567890L, 20.0, 30.0, 10.0)
+
+        val maliciousWellEntity = WellEntity(
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;", 1L, 1L
+        )
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            timeseriesService.insertData(wellId, request)
+        }
+
+        assertEquals("Invalid table name.", exception.message)
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `insertDataBatch should prevent SQL injection in table name`() {
+        val wellId = UUID.randomUUID()
+        val points = listOf(
+            TimeseriesInsertRequest(1234567890L, 101.3, 25.5, 20.0),
+            TimeseriesInsertRequest(1234567891L, 102.0, 26.0, 21.0)
+        )
+
+        val maliciousWellEntity = WellEntity(
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;", 1L, 1L
+        )
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            timeseriesService.insertDataBatch(wellId, points)
+        }
+
+        assertEquals("Invalid table name.", exception.message)
+        verifyNoInteractions(jdbcTemplate)
     }
 }
