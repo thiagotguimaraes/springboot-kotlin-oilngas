@@ -1,4 +1,4 @@
-package com.example.wells.web.dto
+package com.web.app.wells.web.dto
 
 data class TimeseriesInsertRequest(
     val timestamp: Long,

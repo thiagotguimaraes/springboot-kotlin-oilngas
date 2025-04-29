@@ -26,8 +26,7 @@ class WellController(private val wellService: WellService) {
         val well = wellService.getWellById(id)
 
         if (well == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Well id: $id not found")
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Well id: $id not found")
         }
 
         wellService.delete(id)

@@ -12,7 +12,7 @@ Content-Type: application/json
 POST http://localhost:8080/api/wells/delete?id=74b0cf21-c7e6-4969-9015-11be26113293
 
 ###
-DELETE http://localhost:8080/api/wells/400ad796-2892-4936-ac1d-f1b3341a5985
+DELETE http://localhost:8080/api/wells/c123d040-add3-456f-bea4-9904174dea8f
 
 ###
 GET http://localhost:8080/api/wells
