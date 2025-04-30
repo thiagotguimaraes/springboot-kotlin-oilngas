@@ -1,5 +1,6 @@
 package com.web.app.wells.application.service
 
+import com.web.app.utils.lineUpTrimIndent
 import com.web.app.wells.domain.model.TimeseriesPoint
 import com.web.app.wells.persistence.WellEntity
 import com.web.app.wells.persistence.WellRepository
@@ -14,11 +15,10 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.*
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
+import java.sql.ResultSet
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -50,8 +50,11 @@ class TimeseriesServiceTest {
         timeseriesService.insertData(wellId, request)
 
         verify(jdbcTemplate).update(
-            eq("INSERT INTO ${WellService.makeTableName(wellId)} (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)"),
-            eq(1234567890L), eq(20.0), eq(30.0), eq(10.0)
+            eq("""INSERT INTO ${WellService.makeTableName(wellId)} (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)""".lineUpTrimIndent()),
+            eq(1234567890L),
+            eq(20.0),
+            eq(30.0),
+            eq(10.0)
         )
     }
 
@@ -84,20 +87,17 @@ class TimeseriesServiceTest {
         val argumentCaptorBatchArgs = argumentCaptor<List<Array<Any>>>()
 
         verify(jdbcTemplate).batchUpdate(
-            argumentCaptorSqlQuery.capture(),
-            argumentCaptorBatchArgs.capture()
+            argumentCaptorSqlQuery.capture(), argumentCaptorBatchArgs.capture()
         )
 
         assertEquals(
             """
                 INSERT INTO ${WellService.makeTableName(wellId)} (timestamp, pressure, oil_rate, temperature) VALUES (?, ?, ?, ?)
-                """.trimIndent(),
-            argumentCaptorSqlQuery.firstValue
+                """.lineUpTrimIndent(), argumentCaptorSqlQuery.firstValue
         )
 
         val expectedBatchArgs = listOf(
-            arrayOf(1234567890L, 101.3, 25.5, 20.0),
-            arrayOf(1234567891L, 102.0, 26.0, 21.0)
+            arrayOf(1234567890L, 101.3, 25.5, 20.0), arrayOf(1234567891L, 102.0, 26.0, 21.0)
         )
 
         assertEquals(expectedBatchArgs.size, argumentCaptorBatchArgs.firstValue.size)
@@ -165,18 +165,14 @@ class TimeseriesServiceTest {
         val startTime = 1234567890L
         val endTime = 1234567990L
         val expectedData = listOf(
-            TimeseriesPoint(1234567890L, 101.3, 25.5, 20.0),
-            TimeseriesPoint(1234567891L, 102.0, 26.0, 21.0)
+            TimeseriesPoint(1234567890L, 101.3, 25.5, 20.0), TimeseriesPoint(1234567891L, 102.0, 26.0, 21.0)
         )
 
         val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
         `when`(
             jdbcTemplate.query(
-                anyString(),
-                any<RowMapper<TimeseriesPoint>>(),
-                eq(startTime),
-                eq(endTime)
+                anyString(), any<RowMapper<TimeseriesPoint>>(), eq(startTime), eq(endTime)
             )
         ).thenReturn(expectedData)
 
@@ -221,10 +217,7 @@ class TimeseriesServiceTest {
         `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
         `when`(
             jdbcTemplate.query(
-                anyString(),
-                any<RowMapper<TimeseriesPoint>>(),
-                eq(startTime),
-                eq(endTime)
+                anyString(), any<RowMapper<TimeseriesPoint>>(), eq(startTime), eq(endTime)
             )
         ).thenReturn(emptyList())
 
@@ -249,6 +242,45 @@ class TimeseriesServiceTest {
         }
 
         verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `getTimeseriesData should call jdbcTemplate with correct parameters`() {
+        val wellId = UUID.randomUUID()
+        val from = 1234567890L
+        val to = 1234567990L
+
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
+
+        timeseriesService.getTimeseries(wellId, from, to)
+
+        verify(jdbcTemplate).query(
+            eq("""SELECT timestamp, pressure, oil_rate, temperature FROM ${WellService.makeTableName(wellId)} WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp""".lineUpTrimIndent()),
+            any<RowMapper<TimeseriesPoint>>(),
+            eq(from),
+            eq(to)
+        )
+    }
+
+    @Test
+    fun `timeseriesPointRowMapper should map ResultSet to TimeseriesPoint correctly`() {
+        // Mock ResultSet
+        val resultSet = mock<ResultSet> {
+            on { getLong("timestamp") } doReturn 1234567890L
+            on { getDouble("pressure") } doReturn 101.3
+            on { getDouble("oil_rate") } doReturn 25.5
+            on { getDouble("temperature") } doReturn 20.0
+        }
+
+        // Invoke the RowMapper
+        val timeseriesPoint = timeseriesService.timeseriesPointRowMapper.mapRow(resultSet, 0)
+
+        // Assertions
+        assertEquals(1234567890L, timeseriesPoint.timestamp)
+        assertEquals(101.3, timeseriesPoint.pressure)
+        assertEquals(25.5, timeseriesPoint.oilRate)
+        assertEquals(20.0, timeseriesPoint.temperature)
     }
 
     @Test
@@ -284,6 +316,98 @@ class TimeseriesServiceTest {
 
         val exception = assertThrows(IllegalArgumentException::class.java) {
             timeseriesService.insertDataBatch(wellId, points)
+        }
+
+        assertEquals("Invalid table name.", exception.message)
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `deleteTimeseriesData should call jdbcTemplate with correct parameters`() {
+        val wellId = UUID.randomUUID()
+        val from = 1234567890L
+        val to = 1234567990L
+
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
+
+        timeseriesService.deleteTimeseriesData(wellId, from, to)
+
+        verify(jdbcTemplate).update(
+            eq("""DELETE FROM ${WellService.makeTableName(wellId)} WHERE timestamp BETWEEN ? AND ?""".lineUpTrimIndent()),
+            eq(from),
+            eq(to)
+        )
+    }
+
+    @Test
+    fun `deleteTimeseriesData should throw exception if well not found`() {
+        val wellId = UUID.randomUUID()
+        val from = 1234567890L
+        val to = 1234567990L
+
+        val exception = assertThrows(NoSuchElementException::class.java) {
+            timeseriesService.deleteTimeseriesData(wellId, from, to)
+        }
+
+        assertEquals("Well not found", exception.message)
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `deleteTimeseriesData should prevent SQL injection in table name`() {
+        val wellId = UUID.randomUUID()
+        val from = 1234567890L
+        val to = 1234567990L
+
+        val maliciousWellEntity = WellEntity(
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;"
+        )
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            timeseriesService.deleteTimeseriesData(wellId, from, to)
+        }
+
+        assertEquals("Invalid table name.", exception.message)
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `deleteAllTimeseriesData should call jdbcTemplate with correct parameters`() {
+        val wellId = UUID.randomUUID()
+
+        val mockedWellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, WellService.makeTableName(wellId))
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(mockedWellEntity))
+
+        timeseriesService.deleteAllTimeseriesData(wellId)
+
+        verify(jdbcTemplate).update(eq("DELETE FROM ${WellService.makeTableName(wellId)}"))
+    }
+
+    @Test
+    fun `deleteAllTimeseriesData should throw exception if well not found`() {
+        val wellId = UUID.randomUUID()
+
+        val exception = assertThrows(NoSuchElementException::class.java) {
+            timeseriesService.deleteAllTimeseriesData(wellId)
+        }
+
+        assertEquals("Well not found", exception.message)
+        verifyNoInteractions(jdbcTemplate)
+    }
+
+    @Test
+    fun `deleteAllTimeseriesData should prevent SQL injection in table name`() {
+        val wellId = UUID.randomUUID()
+
+        val maliciousWellEntity = WellEntity(
+            wellId, "Well A", 1.0, 1.0, "malicious_table; DROP TABLE users;"
+        )
+        `when`(wellRepository.findById(eq(wellId))).thenReturn(Optional.of(maliciousWellEntity))
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            timeseriesService.deleteAllTimeseriesData(wellId)
         }
 
         assertEquals("Invalid table name.", exception.message)
