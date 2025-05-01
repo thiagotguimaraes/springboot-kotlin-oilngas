@@ -25,8 +25,8 @@ class WellControllerTest {
     @Test
     fun `getAll should return a list of WellResponse when data exists`() {
         val wells = listOf(
-            WellResponse(UUID.randomUUID(), "Well A", 1.0, 1.0, "timeseries_1"),
-            WellResponse(UUID.randomUUID(), "Well B", 2.0, 2.0, "timeseries_2")
+            WellResponse(UUID.randomUUID(), "Well A", 1.0, 1.0, "timeseries_1", null, null),
+            WellResponse(UUID.randomUUID(), "Well B", 2.0, 2.0, "timeseries_2", null, null)
         )
         `when`(wellService.getAll()).thenReturn(wells)
 
@@ -53,7 +53,7 @@ class WellControllerTest {
     @Test
     fun `create should return 200 OK with created WellResponse`() {
         val wellRequest = WellRequest("Well A", 1.0, 1.0)
-        val wellResponse = WellResponse(UUID.randomUUID(), "Well A", 1.0, 1.0, "timeseries_1")
+        val wellResponse = WellResponse(UUID.randomUUID(), "Well A", 1.0, 1.0, "timeseries_1", null, null)
         `when`(wellService.create(anyOrNull())).thenReturn(wellResponse)
 
         wellController = WellController(wellService)
@@ -69,7 +69,7 @@ class WellControllerTest {
     @Test
     fun `delete should return 200 OK when well exists`() {
         val wellId = UUID.randomUUID()
-        val wellResponse = WellResponse(wellId, "Well A", 1.0, 1.0, "timeseries_1")
+        val wellResponse = WellResponse(wellId, "Well A", 1.0, 1.0, "timeseries_1", null, null)
         `when`(wellService.getWellById(wellId)).thenReturn(wellResponse)
 
         wellController = WellController(wellService)
@@ -98,7 +98,7 @@ class WellControllerTest {
     @Test
     fun `getWellById should return 200 OK when well exists`() {
         val wellId = UUID.randomUUID()
-        val wellResponse = WellResponse(wellId, "Well A", 1.0, 1.0, "timeseries_1")
+        val wellResponse = WellResponse(wellId, "Well A", 1.0, 1.0, "timeseries_1", null, null)
         `when`(wellService.getWellById(wellId)).thenReturn(wellResponse)
 
         wellController = WellController(wellService)

@@ -1,5 +1,6 @@
 package com.web.app.wells.application.service
 
+import com.web.app.wells.persistence.WellBoundariesRepository
 import com.web.app.wells.persistence.WellEntity
 import com.web.app.wells.persistence.WellRepository
 import com.web.app.wells.web.dto.WellRequest
@@ -11,22 +12,40 @@ import java.util.*
 @Service
 class WellService(
     private val wellRepository: WellRepository,
+    private val wellBoundariesRepository: WellBoundariesRepository,
     private val jdbcTemplate: JdbcTemplate
 ) {
 
-    fun getAll(): List<WellResponse> = wellRepository.findAll().map { toDto(it) }
+    fun getAll(): List<WellResponse> {
+        val wells = wellRepository.findAll()
+        val boundariesMap = wellBoundariesRepository.findAll().associateBy { it.wellId }
+
+        return wells.map { well ->
+            val boundaries = boundariesMap[well.id]
+            WellResponse(
+                id = well.id,
+                name = well.name,
+                latitude = well.latitude,
+                longitude = well.longitude,
+                collection = well.collection,
+                startMs = boundaries?.startMs,
+                endMs = boundaries?.endMs
+            )
+        }
+    }
 
     fun getWellById(wellId: UUID): WellResponse? {
         val wellEntity = wellRepository.findById(wellId).orElseThrow {
             NoSuchElementException("Well not found")
         }
-        return toDto(wellEntity)
+        val boundaries = wellBoundariesRepository.findById(wellId).orElse(null)
+
+        return toDto(wellEntity, boundaries?.startMs, boundaries?.endMs)
     }
 
     fun create(request: WellRequest): WellResponse {
         val wellId = UUID.randomUUID()
         val tableName = makeTableName(wellId)
-
         val entity = WellEntity(
             id = wellId,
             name = request.name,
@@ -36,10 +55,9 @@ class WellService(
         )
 
         val saved = wellRepository.save(entity)
-
         createTimeseriesTable(saved.collection)
 
-        return toDto(saved)
+        return toDto(saved, null, null)
     }
 
     fun delete(wellId: UUID) {
@@ -60,20 +78,20 @@ class WellService(
         internal fun validateTableName(tableName: String) {
             var error = false
             if (!tableName.startsWith("timeseries_")) error = true
-
             val uuidRegex = Regex("^[a-fA-F0-9]{32}$") // Matches a UUID without dashes
             val uuidPart = tableName.removePrefix("timeseries_")
             if (!uuidRegex.matches(uuidPart)) error = true
-
             if (error) throw IllegalArgumentException("Invalid table name.")
         }
 
-        internal fun toDto(well: WellEntity): WellResponse = WellResponse(
+        internal fun toDto(well: WellEntity, startMs: Long?, endMs: Long?): WellResponse = WellResponse(
             id = well.id,
             name = well.name,
             latitude = well.latitude,
             longitude = well.longitude,
-            collection = well.collection
+            collection = well.collection,
+            startMs = startMs,
+            endMs = endMs
         )
     }
 }

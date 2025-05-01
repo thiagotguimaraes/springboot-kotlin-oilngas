@@ -1,4 +1,6 @@
 #!/bin/bash
 
-./mvnw clean compile
+./mvnw clean install
+./mvnw flyway:repair
+./mvnw flyway:migrate
 ./mvnw spring-boot:run

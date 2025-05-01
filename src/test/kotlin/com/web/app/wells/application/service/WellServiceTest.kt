@@ -1,5 +1,8 @@
 package com.web.app.wells.application.service
 
+import com.web.app.utils.Json
+import com.web.app.wells.persistence.WellBoundariesEntity
+import com.web.app.wells.persistence.WellBoundariesRepository
 import com.web.app.wells.persistence.WellEntity
 import com.web.app.wells.persistence.WellRepository
 import com.web.app.wells.web.dto.WellRequest
@@ -24,6 +27,9 @@ class WellServiceTest {
     private lateinit var wellRepository: WellRepository
 
     @Mock
+    private lateinit var wellBoundariesRepository: WellBoundariesRepository
+
+    @Mock
     private lateinit var jdbcTemplate: JdbcTemplate
 
     private lateinit var wellService: WellService
@@ -33,7 +39,7 @@ class WellServiceTest {
 
     @BeforeEach
     fun setup() {
-        wellService = WellService(wellRepository, jdbcTemplate)
+        wellService = WellService(wellRepository, wellBoundariesRepository, jdbcTemplate)
     }
 
     // Test cases for getAll()
@@ -43,13 +49,43 @@ class WellServiceTest {
             WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries"),
             WellEntity(UUID.randomUUID(), "Well B", 2.0, 2.0, "well_b_timeseries")
         )
+
+        val wellBoundariesEntities = listOf(
+            WellBoundariesEntity(wellEntities[0].id, 1000L, 2000L),
+            WellBoundariesEntity(wellEntities[1].id, 3000L, 4000L)
+        )
+
         `when`(wellRepository.findAll()).thenReturn(wellEntities)
+        `when`(wellBoundariesRepository.findAll()).thenReturn(wellBoundariesEntities)
 
         val result = wellService.getAll()
 
+        verify(wellRepository).findAll()
+        verify(wellBoundariesRepository).findAll()
+
         assertEquals(2, result.size)
-        assertEquals("Well A", result[0].name)
-        assertEquals("Well B", result[1].name)
+        assertEquals(
+            "{\n" +
+                    "  \"id\": \"${wellEntities[0].id}\",\n" +
+                    "  \"name\": \"Well A\",\n" +
+                    "  \"latitude\": 1.0,\n" +
+                    "  \"longitude\": 1.0,\n" +
+                    "  \"collection\": \"well_a_timeseries\",\n" +
+                    "  \"startMs\": 1000,\n" +
+                    "  \"endMs\": 2000\n" +
+                    "}", Json.toJson(result[0])
+        )
+        assertEquals(
+            "{\n" +
+                    "  \"id\": \"${wellEntities[1].id}\",\n" +
+                    "  \"name\": \"Well B\",\n" +
+                    "  \"latitude\": 2.0,\n" +
+                    "  \"longitude\": 2.0,\n" +
+                    "  \"collection\": \"well_b_timeseries\",\n" +
+                    "  \"startMs\": 3000,\n" +
+                    "  \"endMs\": 4000\n" +
+                    "}", Json.toJson(result[1])
+        )
     }
 
     @Test
@@ -66,12 +102,28 @@ class WellServiceTest {
     fun `getWellById should return WellResponse when well exists`() {
         val wellId = UUID.randomUUID()
         val wellEntity = WellEntity(wellId, "Well A", 1.0, 1.0, "well_a_timeseries")
+        val wellBoundariesEntity = WellBoundariesEntity(wellId, 1000L, 2000L)
+
         `when`(wellRepository.findById(wellId)).thenReturn(Optional.of(wellEntity))
+        `when`(wellBoundariesRepository.findById(wellId)).thenReturn(Optional.of(wellBoundariesEntity))
 
         val result = wellService.getWellById(wellId)
 
+        verify(wellRepository).findById(wellId)
+        verify(wellBoundariesRepository).findById(wellId)
+
         assertNotNull(result)
-        assertEquals("Well A", result?.name)
+        assertEquals(
+            "{\n" +
+                    "  \"id\": \"${wellId}\",\n" +
+                    "  \"name\": \"Well A\",\n" +
+                    "  \"latitude\": 1.0,\n" +
+                    "  \"longitude\": 1.0,\n" +
+                    "  \"collection\": \"well_a_timeseries\",\n" +
+                    "  \"startMs\": 1000,\n" +
+                    "  \"endMs\": 2000\n" +
+                    "}", Json.toJson(result)
+        )
     }
 
     @Test
@@ -98,6 +150,7 @@ class WellServiceTest {
         assertNotNull(result)
         assertEquals("Well A", result.name)
         verify(wellRepository).save(any(WellEntity::class.java))
+        verifyNoInteractions(wellBoundariesRepository)
     }
 
     @Test
@@ -144,7 +197,7 @@ class WellServiceTest {
     fun `WellEntity toDto should map WellEntity to WellResponse`() {
         val wellEntity = WellEntity(UUID.randomUUID(), "Well A", 1.0, 1.0, "well_a_timeseries")
 
-        val result = WellService.toDto(wellEntity)
+        val result = WellService.toDto(wellEntity, null, null)
 
         assertEquals("Well A", result.name)
         assertEquals(1.0, result.latitude)
