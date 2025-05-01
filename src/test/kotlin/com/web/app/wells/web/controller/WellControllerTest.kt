@@ -33,9 +33,9 @@ class WellControllerTest {
         wellController = WellController(wellService)
         val result = wellController.getAll()
 
-        assertEquals(2, result.size)
-        assertEquals("Well A", result[0].name)
-        assertEquals("Well B", result[1].name)
+        assertEquals(2, result.body!!.size)
+        assertEquals("Well A", result.body!![0].name)
+        assertEquals("Well B", result.body!![1].name)
         verify(wellService).getAll()
     }
 
@@ -46,7 +46,7 @@ class WellControllerTest {
         wellController = WellController(wellService)
         val result = wellController.getAll()
 
-        assertTrue(result.isEmpty())
+        assertTrue(result.body!!.isEmpty())
         verify(wellService).getAll()
     }
 
@@ -59,7 +59,7 @@ class WellControllerTest {
         wellController = WellController(wellService)
         val response = wellController.create(wellRequest)
 
-        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals(HttpStatus.OK.value(), response.status)
         assertEquals(wellResponse, response.body)
         val wellRequestCaptor = argumentCaptor<WellRequest>()
         verify(wellService).create(wellRequestCaptor.capture())
@@ -75,8 +75,10 @@ class WellControllerTest {
         wellController = WellController(wellService)
         val response = wellController.delete(wellId)
 
-        assertEquals(HttpStatus.OK, response.statusCode)
-        assertEquals("Well with ID $wellId deleted successfully.", response.body)
+        assertEquals(HttpStatus.OK.value(), response.status)
+        assertEquals("success", response.message)
+        assertNull(response.body)
+        assertTrue(response.ok)
         verify(wellService).getWellById(wellId)
         verify(wellService).delete(wellId)
     }
@@ -89,8 +91,10 @@ class WellControllerTest {
         wellController = WellController(wellService)
         val response = wellController.delete(wellId)
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
-        assertEquals("Well id: $wellId not found", response.body)
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.status)
+        assertEquals("Well not found", response.message)
+        assertNull(response.body)
+        assertFalse(response.ok)
         verify(wellService).getWellById(wellId)
         verifyNoMoreInteractions(wellService)
     }
@@ -104,7 +108,7 @@ class WellControllerTest {
         wellController = WellController(wellService)
         val response = wellController.getWellById(wellId)
 
-        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals(HttpStatus.OK.value(), response.status)
         assertEquals(wellResponse, response.body)
         verify(wellService).getWellById(wellId)
     }
@@ -117,7 +121,7 @@ class WellControllerTest {
         wellController = WellController(wellService)
         val response = wellController.getWellById(wellId)
 
-        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.status)
         assertNull(response.body)
         verify(wellService).getWellById(wellId)
     }

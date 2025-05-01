@@ -31,3 +31,6 @@ Content-Type: application/json
 
 ###
 GET http://localhost:8080/api/wells/56322a37-33ce-4f9a-8674-41f123c5d3b6/timeseries?from=1713880000000&to=1713900000000
+
+###
+GET http://localhost:8080/api/wells/bb5da8f7-b70f-4b72-a869-f87aca4f9887

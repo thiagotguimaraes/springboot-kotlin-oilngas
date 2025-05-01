@@ -35,9 +35,9 @@ class WellService(
     }
 
     fun getWellById(wellId: UUID): WellResponse? {
-        val wellEntity = wellRepository.findById(wellId).orElseThrow {
-            NoSuchElementException("Well not found")
-        }
+        val wellEntity = wellRepository.findById(wellId).orElse(null)
+        if (wellEntity == null) return null
+        
         val boundaries = wellBoundariesRepository.findById(wellId).orElse(null)
 
         return toDto(wellEntity, boundaries?.startMs, boundaries?.endMs)

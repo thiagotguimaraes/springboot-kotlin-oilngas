@@ -127,15 +127,13 @@ class WellServiceTest {
     }
 
     @Test
-    fun `getWellById should return throw exception when well does not exist`() {
+    fun `getWellById should not throw exception when well does not exist`() {
         val wellId = UUID.randomUUID()
         `when`(wellRepository.findById(wellId)).thenReturn(Optional.empty())
 
-        val exception = assertThrows(NoSuchElementException::class.java) {
+        assertDoesNotThrow {
             wellService.getWellById(wellId)
         }
-
-        assertEquals(exception.message, "Well not found")
     }
 
     // Test cases for create()
